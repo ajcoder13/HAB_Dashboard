@@ -153,10 +153,10 @@ export async function collectMetrics(): Promise<Metrics> {
         usage: d.use,
         capacity: d.size,
       })),
-      readsPerSec: diskIO.rIO_sec ?? 0,
-      writesPerSec: diskIO.wIO_sec ?? 0,
-      readWaitTime: diskIO.rWaitTime ?? 0,
-      writeWaitTime: diskIO.wWaitTime ?? 0,
+      readsPerSec: diskIO?.rIO_sec ?? 0,
+      writesPerSec: diskIO?.wIO_sec ?? 0,
+      readWaitTime: diskIO?.rWaitTime ?? 0,
+      writeWaitTime: diskIO?.wWaitTime ?? 0,
     },
     network: {
       interfaces: net.map((n) => ({
