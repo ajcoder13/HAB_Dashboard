@@ -175,7 +175,7 @@ export async function collectMetrics(): Promise<Metrics> {
     pm2Processes,
   };
 
-  console.log(JSON.stringify(metrics, null, 2));
+  // console.log(JSON.stringify(metrics, null, 2));
 
   return metrics;
 }

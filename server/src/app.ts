@@ -1,7 +1,16 @@
 import express, { type Request, type Response } from "express";
+import cors from "cors";
 import routes from "./routes.js";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3000", /// TODO: Add env var for this or change in prod
+    methods: ["GET", "POST", "DELETE", "PUT"],
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
