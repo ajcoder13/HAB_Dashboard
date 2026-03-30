@@ -1,44 +1,83 @@
 "use client";
 
 import { useLogs } from "@/features/logs/hooks/useLogs";
+import { LogsHeader } from "@/features/logs/components/LogsHeader";
+import { LogVolumeChart } from "@/features/logs/components/LogVolumeChart";
+import { Filters } from "@/features/logs/components/Filters";
+import { LogsTable } from "@/features/logs/components/LogsTable";
+
+const PAGE_SIZE = 50;
 
 export default function LogsPage() {
-  const { data, loading, filters, setFilters, nextPage, prevPage } = useLogs();
+  const { data, total, loading, filters, isLive, setFilters, nextPage, prevPage } = useLogs({
+    limit: PAGE_SIZE,
+    order: "desc",
+  });
+
+  // Derive pagination state from offset + limit
+  const currentPage = Math.floor((filters.offset ?? 0) / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleReset = () => {
+    setFilters({
+      startDate: undefined,
+      endDate: undefined,
+      level: undefined,
+      endpoint: undefined,
+      method: undefined,
+      status_code: undefined,
+      response_time_min: undefined,
+      response_time_max: undefined,
+      offset: 0,
+      order: "desc",
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex gap-2">
-        <button onClick={() => setFilters({ level: "ERROR" })}>Errors</button>
+    <div className="surface-base min-h-screen">
+      {/* ── Header ────────────────────────────────────── */}
+      <LogsHeader
+        onCreateOptimizer={() => console.log("Create Optimizer")}
+        onCreateAlert={() => console.log("Create Alert")}
+        onExport={() => console.log("Export")}
+      />
 
-        <button onClick={() => setFilters({ level: undefined })}>All</button>
+      {/* Hairline divider — ghost border, not a solid line */}
+      <div
+        style={{
+          height: 1,
+          background: "rgba(195,198,214,0.15)",
+          marginLeft: 24,
+          marginRight: 24,
+        }}
+      />
+
+      {/* ── Chart ─────────────────────────────────────── */}
+      <div className="pt-4">
+        <LogVolumeChart />
       </div>
 
-      {/* Logs */}
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <div className="space-y-2">
-          {data.map((log) => (
-            <div key={log.id} className="card">
-              <div className="flex justify-between text-sm">
-                <span>
-                  {log.method} {log.url}
-                </span>
-                <span>{log.status_code}</span>
-              </div>
+      {/* ── Filters ────────────────────────────── */}
+      <Filters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onReset={handleReset}
+      />
 
-              <p className="text-on-surface-variant text-sm">{log.message}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── Logs table ─────────────────────────── */}
+      <LogsTable
+        logs={data}
+        loading={loading}
+        total={total}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onNextPage={nextPage}
+        onPrevPage={prevPage}
+        isLive={isLive}
+      />
 
-      {/* Pagination */}
-      <div className="flex gap-2">
-        <button onClick={prevPage}>Prev</button>
-        <button onClick={nextPage}>Next</button>
-      </div>
+      {/* ── Filter + Table sections come next ─────────── */}
+      {/* FilterPanel and LogTable will be added in subsequent steps */}
     </div>
   );
 }

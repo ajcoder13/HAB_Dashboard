@@ -1,8 +1,8 @@
 import { apiFetch } from "@/lib/api";
-import { GetLogsParams } from "@/types/logs.types";
+import { GetLogsParams, type GetLogsResponse } from "@/types/logs.types";
 
 export const LogsService = {
-  getLogs: (params?: GetLogsParams) => apiFetch("/logs", {}, params),
+  getLogs: (params?: GetLogsParams): Promise<GetLogsResponse> => apiFetch("/logs", {}, params),
 
   getLogsById: (id: string) => apiFetch(`/logs/id/${id}`),
 

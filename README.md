@@ -99,10 +99,13 @@ EXECUTE FUNCTION notify_db_updates();
 
 ```sql
 INSERT INTO public.server_logs (
+  "timestamp",
   level, message, method, url, status_code,
   response_time, correlation_id, ip_address, user_agent, meta
 )
 SELECT
+  NOW() - (random() * INTERVAL '30 days'),
+
   (ARRAY['INFO','WARN','ERROR'])[floor(random()*3 + 1)],
 
   (ARRAY[
