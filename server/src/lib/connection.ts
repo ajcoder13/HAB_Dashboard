@@ -26,14 +26,20 @@ export async function setupRealtimeSystem(io: Server) {
     await pgListener.connect();
     console.log("PostgreSQL LISTEN client connected");
 
-    await pgListener.query("LISTEN realtime_channel"); // ⚠️ match your trigger!
+    await pgListener.query("LISTEN db_updates");
 
     pgListener.on("notification", (msg) => {
-      if (msg.channel === "realtime_channel") {
+      if (msg.channel === "db_updates") {
         const payload = JSON.parse(msg.payload || "{}");
         console.log("DB update:", payload);
 
-        io.emit("db_updated", payload);
+        const emitPayload = {
+          table: payload.table,
+          action: payload.action,
+          record: payload.data,
+        };
+
+        io.emit("db_updated", emitPayload);
       }
     });
   } catch (error) {
