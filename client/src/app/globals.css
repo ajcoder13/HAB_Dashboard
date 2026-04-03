@@ -219,17 +219,28 @@ body {
   color: #ffffff;
 }
 
-/* Status chips */
 .chip-success {
-  background-color: var(--color-success-container);
+  background-color: color-mix(in srgb, var(--color-success-container), transparent 0%);
   color: var(--color-success);
 }
 
 .chip-error {
-  background-color: var(--color-error-container);
+  background-color: color-mix(in srgb, var(--color-error-container), transparent 0%);
   color: var(--color-error);
 }
 
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 120px; 
+  min-height: 120px;
+}
+canvas {
+  display: block ;
+  max-width: 100%;
+  width: 100% ;
+  height: 100% ;
+}
 /* =========================
    🔍 SEARCH & INPUTS
    Floating search — white bg, ghost border
