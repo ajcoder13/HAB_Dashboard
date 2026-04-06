@@ -30,6 +30,8 @@ npm run build         # Compile TypeScript to dist/
 npm start             # Start compiled server from dist/
 ```
 
+**Note:** The `system_metrics` database table is automatically created on server startup. Ensure PostgreSQL is running and environment variables are properly configured in `.env`.
+
 ### Running a Single Test
 
 No test framework is currently configured. When adding tests, use:

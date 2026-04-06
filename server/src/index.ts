@@ -4,8 +4,11 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { startMetricsScheduler } from "./modules/metrics/metrics.scheduler.js";
 import { setupRealtimeSystem } from "./lib/connection.js";
+import { initMetricsTable } from "./modules/metrics/metrics.init.js";
 
 dotenv.config({ quiet: true });
+
+await initMetricsTable();
 
 startMetricsScheduler();
 
