@@ -7,7 +7,6 @@ import { CheckCircle, Timer } from "lucide-react";
 const navItems = [
   { name: "System Metrics", href: "/metrics" },
   { name: "Logs", href: "/logs" },
-  { name: "API Status", href: "/api-status" },
 ];
 
 export function Navbar() {

@@ -108,3 +108,8 @@ function mapRowToMetrics(row: any): Metrics {
     pm2Processes: row.pm2_processes,
   };
 }
+
+export async function deleteOldMetrics(days: number) {
+  const query = `DELETE FROM system_metrics WHERE measured_at < NOW() - $1 * INTERVAL '1 day'`;
+  await pool.query(query, [days]);
+}
