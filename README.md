@@ -18,132 +18,23 @@ npm run dev
 
 ## DB setup
 
-Ensure you have PostgreSQL installed. Then run these 3 commands in PSQL console.
+Ensure you have PostgreSQL installed and running. The database schema will be automatically initialized when the server starts for the first time.
 
-1. Realtime Updates setup
-
-```sql
-CREATE OR REPLACE FUNCTION public.notify_realtime_update()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  -- Broadcasts a message to the 'realtime_channel'
-  -- The payload is a JSON object with the table name, operation type, and the new row data
-  PERFORM pg_notify(
-    'realtime_channel',
-    json_build_object(
-      'table', TG_TABLE_NAME,
-      'action', TG_OP,
-      'record', row_to_json(NEW)
-    )::text
-  );
-
-  -- Trigger functions must return NEW for INSERT/UPDATE triggers
-  RETURN NEW;
-END;
-$$;
+**Required environment variables in `server/.env`:**
+```env
+DB_USER=your_postgres_user
+DB_HOST=localhost
+DB_NAME=hab_dashboard
+DB_PASSWORD=your_postgres_password
+DB_PORT=5432
+PORT=3004
 ```
 
-2. Table creation
+**Tables created automatically on server startup:**
+- `system_metrics` - Stores system performance metrics (CPU, memory, disk, network, PM2 processes)
+- Index on `system_metrics(measured_at DESC)` for efficient time-range queries
 
-```sql
--- 1. Create the table
-CREATE TABLE public.server_logs (
-    id SERIAL PRIMARY KEY,
-    "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    level CHARACTER VARYING(10),
-    message TEXT,
-    method CHARACTER VARYING(10),
-    url TEXT,
-    status_code INTEGER,
-    response_time INTEGER,
-    correlation_id UUID,
-    ip_address INET,
-    user_agent TEXT,
-    meta JSONB
-);
-
--- 2. Create the indexes (for faster querying)
-CREATE INDEX idx_logs_correlation_id ON public.server_logs USING btree (correlation_id);
-CREATE INDEX idx_logs_level ON public.server_logs USING btree (level);
-CREATE INDEX idx_logs_timestamp ON public.server_logs USING btree ("timestamp");
-
--- 3. Create the notification function (matches your Node.js channel)
-CREATE OR REPLACE FUNCTION notify_db_updates()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  PERFORM pg_notify(
-    'db_updates',
-    json_build_object(
-      'table', TG_TABLE_NAME,
-      'action', TG_OP,
-      'data', row_to_json(NEW)
-    )::text
-  );
-
-  RETURN NEW;
-END;
-$$;
-
--- 4. Attach the trigger to the new table
-CREATE TRIGGER trigger_notify_db_updates
-AFTER INSERT OR UPDATE ON public.server_logs
-FOR EACH ROW
-EXECUTE FUNCTION notify_db_updates();
-```
-
-3. Fill with dummy data
-
-```sql
-INSERT INTO public.server_logs (
-  "timestamp",
-  level, message, method, url, status_code,
-  response_time, correlation_id, ip_address, user_agent, meta
-)
-SELECT
-  NOW() - (random() * INTERVAL '30 days'),
-
-  (ARRAY['INFO','WARN','ERROR'])[floor(random()*3 + 1)],
-
-  (ARRAY[
-    'Request completed',
-    'User authenticated',
-    'Database timeout',
-    'Invalid input received',
-    'Cache miss',
-    'External API failed'
-  ])[floor(random()*6 + 1)],
-
-  (ARRAY['GET','POST','PUT','DELETE'])[floor(random()*4 + 1)],
-
-  (ARRAY[
-    '/api/users',
-    '/api/login',
-    '/api/products',
-    '/api/orders',
-    '/api/profile'
-  ])[floor(random()*5 + 1)],
-
-  (ARRAY[200,201,400,401,404,500])[floor(random()*6 + 1)],
-
-  floor(random()*1000 + 50)::int,
-
-  gen_random_uuid(),
-
-  ('192.168.1.' || floor(random()*255))::inet,
-
-  'Mozilla/5.0',
-
-  jsonb_build_object(
-    'env', 'dev',
-    'version', '1.0.' || floor(random()*10)
-  )
-
-FROM generate_series(1, 100);
-```
+The initialization script runs once when the server starts and will recreate the `system_metrics` table with the correct schema.
 
 ## Client Setup
 
@@ -337,3 +228,172 @@ Shared utilities and integrations.
 | `api.ts`    | Wrapper around `fetch`                |
 | `socket.ts` | Socket.IO client for realtime updates |
 | `utils.ts`  | Helper functions                      |
+
+---
+
+## Testing
+
+### 1. Test Database Connection
+
+Verify that PostgreSQL is running and the connection is working:
+
+```bash
+cd server
+npm run dev
+```
+
+Look for this output in the console:
+```
+Successfully connected to the PostgreSQL database
+Metrics table initialized successfully.
+PostgreSQL LISTEN client connected
+Server running on http://localhost:3004
+```
+
+### 2. Test Metrics Collection
+
+Once the server is running, metrics should be collected automatically every 30 seconds:
+
+```bash
+# Check for metrics collection logs
+npm run dev
+```
+
+Look for output like:
+```
+Metrics collected and saved to DB
+```
+
+### 3. Test API Endpoints (using curl or Postman)
+
+#### Test Metrics API
+
+```bash
+# Get metrics for the last 1 hour
+curl http://localhost:3004/api/metrics/1h
+
+# Get metrics for the last 24 hours
+curl http://localhost:3004/api/metrics/24h
+
+# Get metrics for the last 7 days
+curl http://localhost:3004/api/metrics/7d
+
+# Get metrics for the last 30 days
+curl http://localhost:3004/api/metrics/30d
+```
+
+#### Test Logs API
+
+```bash
+# Get all logs
+curl http://localhost:3004/api/logs
+
+# Get logs with filters
+curl "http://localhost:3004/api/logs?level=ERROR&limit=10"
+
+# Get a specific log by ID (replace :id with an actual log ID)
+curl http://localhost:3004/api/logs/id/:id
+```
+
+### 4. Test Database Schema
+
+Connect to PostgreSQL and verify the table was created:
+
+```bash
+# Access PostgreSQL
+psql -h localhost -U <DB_USER> -d hab_dashboard
+
+# Check if system_metrics table exists
+\dt system_metrics
+
+# View table structure
+\d system_metrics
+
+# Count metrics records
+SELECT COUNT(*) FROM system_metrics;
+
+# View recent metrics (last 5 records)
+SELECT id, measured_at, cpu_usage, memory_used FROM system_metrics ORDER BY measured_at DESC LIMIT 5;
+```
+
+### 5. Test Client Application
+
+Ensure both server and client are running:
+
+```bash
+# Terminal 1: Start server
+cd server
+npm run dev
+
+# Terminal 2: Start client
+cd client
+pnpm dev
+```
+
+Open your browser and navigate to:
+- Dashboard: http://localhost:3005
+- Metrics page: http://localhost:3005/metrics
+- Logs page: http://localhost:3005/logs
+
+### 6. Test Real-time Updates
+
+1. Open http://localhost:3005 in your browser
+2. Watch the metrics dashboard update in real-time
+3. Metrics should refresh automatically as new data is collected
+
+### 7. Test UI Responsiveness
+
+- Resize your browser window
+- Verify that the dashboard layout is responsive on different screen sizes
+- Check mobile view (use browser DevTools - F12 → toggle device toolbar)
+
+### 8. Type Checking (Without Running)
+
+Verify TypeScript configuration is correct:
+
+```bash
+# Check client types
+cd client && npx tsc --noEmit
+
+# Check server types
+cd server && npx tsc --noEmit
+```
+
+### 9. Integration Test Checklist
+
+- [ ] Server starts without errors
+- [ ] Database connection is established
+- [ ] `system_metrics` table is created
+- [ ] Metrics are collected every 30 seconds
+- [ ] `/api/metrics/:scale` returns data
+- [ ] `/api/logs` endpoint responds
+- [ ] Client starts on http://localhost:3005
+- [ ] Metrics dashboard displays data
+- [ ] Logs page loads and displays logs
+- [ ] Real-time updates work (data updates without page refresh)
+- [ ] Responsive design works on mobile/tablet/desktop
+
+---
+
+## Troubleshooting
+
+### "relation \"system_metrics\" does not exist"
+
+**Problem:** The server fails to collect metrics with error: `relation "system_metrics" does not exist`
+
+**Solution:** The metrics table is automatically created when the server starts. If this error occurs:
+1. Ensure PostgreSQL is running
+2. Verify environment variables in `server/.env` are correct (DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT)
+3. Restart the server: `npm run dev`
+
+The initialization script will drop and recreate the `system_metrics` table with the correct schema on startup.
+
+### "Metrics collection failed: invalid input syntax for type bigint"
+
+**Problem:** The server fails with a data type error when inserting metrics
+
+**Solution:** This has been fixed in the current version. The schema uses `DOUBLE PRECISION` for numeric metrics fields (uptime, cpu_usage, memory_total, etc.) to handle floating-point values correctly.
+
+---
+
+
