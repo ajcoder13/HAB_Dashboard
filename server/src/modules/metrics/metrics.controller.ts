@@ -12,7 +12,7 @@ function isValidScale(scale: string): scale is TimeScale {
 // Inside server/src/modules/metrics/metrics.controller.ts
 export async function getMetrics(req: Request, res: Response) {
   try {
-    const scale = req.params.scale as TimeScale;
+    const scale = (req.params.scale || req.query.range || req.query.scale || "1h") as TimeScale;
     const data = await getMetricsTimeScale(scale); // ADD AWAIT HERE
     res.json(data);
   } catch (err) {

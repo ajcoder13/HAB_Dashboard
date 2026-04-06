@@ -3,7 +3,7 @@ import { SystemMetricsResponse, TimeRange } from "@/types/metrics.types";
 
 export const MetricsService = {
   getMetrics: async (range: TimeRange = "1h"): Promise<SystemMetricsResponse> => {
-    const data = await apiFetch("/metrics", {}, { range });
+    const data = await apiFetch(`/metrics/${range}`);
 
     if (!data) {
       throw new Error("No data received from backend");

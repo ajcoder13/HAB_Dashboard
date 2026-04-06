@@ -25,65 +25,65 @@ export const transformServerData = (rawArray: any[]): SystemMetricsResponse => {
         lastUpdated: new Date(latest.timestamp).toISOString(),
 
         cpu: {
-            currentUsage: Number(latest.cpu.usage.toFixed(1)),
+            currentUsage: Number(latest.cpu.usage.toFixed(2)),
             loadAverage: latest.cpu.loadavg ? Number(latest.cpu.loadavg[0].toFixed(2)) : 0,
-            averageUsage: Number((rawArray.reduce((acc, curr) => acc + curr.cpu.usage, 0) / rawArray.length).toFixed(1)),
-            minUsage: Math.min(...rawArray.map(s => s.cpu.usage)),
-            maxUsage: Math.max(...rawArray.map(s => s.cpu.usage)),
-            cores: latest.cpu.cores.map((usage: number, id: number) => ({ id, usage: Number(usage.toFixed(1)) })),
+            averageUsage: Number((rawArray.reduce((acc, curr) => acc + curr.cpu.usage, 0) / rawArray.length).toFixed(2)),
+            minUsage: Number(Math.min(...rawArray.map(s => s.cpu.usage)).toFixed(2)),
+            maxUsage: Number(Math.max(...rawArray.map(s => s.cpu.usage)).toFixed(2)),
+            cores: latest.cpu.cores.map((usage: number, id: number) => ({ id, usage: Number(usage.toFixed(2)) })),
             history: rawArray.map(s => ({
                 timestamp: new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                usage: s.cpu.usage
+                usage: Number(s.cpu.usage.toFixed(2))
             })),
             topProcesses: latest.cpu.topProcesses.map((p: any) => ({
                 pid: p.pid,
                 name: p.name,
-                cpu: p.cpu
+                cpu: Number(p.cpu.toFixed(2))
             })),
         },
 
         memory: {
-            total: latest.memory.total,
+            total: Number(latest.memory.total.toFixed(2)),
             currentUsed: Number(latest.memory.used.toFixed(2)),
             currentFree: Number((latest.memory.total - latest.memory.used).toFixed(2)),
             pressure: (latest.memory.used > latest.memory.total * 0.8 ? "High" : "Low") as MemoryPressure,
             history: rawArray.map(s => ({
                 timestamp: new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                used: s.memory.used,
+                used: Number(s.memory.used.toFixed(2)),
             }))
         },
 
         disk: {
-            currentRead: latest.disk.readsPerSec,
-            currentWrite: latest.disk.writesPerSec,
+            currentRead: Number((latest.disk.readsPerSec || 0).toFixed(2)),
+            currentWrite: Number((latest.disk.writesPerSec || 0).toFixed(2)),
             ioWaitPercent: Number(((latest.disk.readWaitTime || 0) + (latest.disk.writeWaitTime || 0)).toFixed(2)),
-            readWait: latest.disk.readWaitTime,
-            writeWait: latest.disk.writeWaitTime,
+            readWait: Number((latest.disk.readWaitTime || 0).toFixed(2)),
+            writeWait: Number((latest.disk.writeWaitTime || 0).toFixed(2)),
             mountPoints: latest.disk.disks.map((d: any) => ({
                 path: d.mount,
-                total: d.capacity,
-                used: (d.usage / 100) * d.capacity,
-                usagePercent: d.usage
+                total: Number(d.capacity.toFixed(2)),
+                used: Number(((d.usage / 100) * d.capacity).toFixed(2)),
+                usagePercent: Number(d.usage.toFixed(2))
             })),
             history: rawArray.map(s => ({
                 timestamp: new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                readSpeed: s.disk.readsPerSec,
-                writeSpeed: s.disk.writesPerSec
+                readSpeed: Number((s.disk.readsPerSec || 0).toFixed(2)),
+                writeSpeed: Number((s.disk.writesPerSec || 0).toFixed(2))
             }))
         },
 
         network: {
-            currentRx: latest.network.interfaces[0]?.rxBytesPerSec || 0,
-            currentTx: latest.network.interfaces[0]?.txBytesPerSec || 0,
+            currentRx: Number((latest.network.interfaces[0]?.rxBytesPerSec || 0).toFixed(2)),
+            currentTx: Number((latest.network.interfaces[0]?.txBytesPerSec || 0).toFixed(2)),
             activeConnections: latest.network.activeConnections,
             history: rawArray.map(s => ({
                 timestamp: new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                rx: s.network.interfaces[0]?.rxBytesPerSec || 0,
-                tx: s.network.interfaces[0]?.txBytesPerSec || 0
+                rx: Number((s.network?.interfaces?.[0]?.rxBytesPerSec || 0).toFixed(2)),
+                tx: Number((s.network?.interfaces?.[0]?.txBytesPerSec || 0).toFixed(2))
             })),
-            droppedPackets: (latest.network.interfaces[0].rxDropped || 0) + (latest.network.interfaces[0].txDropped || 0),
-            errors: (latest.network.interfaces[0].rxErrors || 0) + (latest.network.interfaces[0].txErrors || 0),
-            interfaceName: latest.network.interfaces[0].interface,
+            droppedPackets: (latest.network?.interfaces?.[0]?.rxDropped || 0) + (latest.network?.interfaces?.[0]?.txDropped || 0),
+            errors: (latest.network?.interfaces?.[0]?.rxErrors || 0) + (latest.network?.interfaces?.[0]?.txErrors || 0),
+            interfaceName: latest.network?.interfaces?.[0]?.interface || "unknown",
         },
 
         processes: latest.pm2Processes.map((p: any) => ({
@@ -92,8 +92,8 @@ export const transformServerData = (rawArray: any[]): SystemMetricsResponse => {
             status: p.status as ProcessStatus,
             uptime: p.uptime,
             restartCount: p.restartCount,
-            cpuUsage: p.cpuPercent,
-            memoryUsage: p.memoryMB
+            cpuUsage: Number(p.cpuPercent.toFixed(2)),
+            memoryUsage: Number(p.memoryMB.toFixed(2))
         }))
     };
 };

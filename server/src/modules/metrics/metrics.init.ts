@@ -3,7 +3,7 @@ import pool from "../../lib/db.js";
 
 export async function initMetricsTable() {
   const query = `
-    DROP TABLE IF EXISTS system_metrics;
+    -- DROP TABLE IF EXISTS system_metrics;
 
     CREATE TABLE IF NOT EXISTS system_metrics (
       id BIGSERIAL PRIMARY KEY,
