@@ -15,7 +15,7 @@ This is a monorepo with two main packages:
 ```bash
 cd client
 pnpm install          # Install dependencies
-pnpm dev              # Start dev server at http://localhost:3000
+pnpm dev              # Start dev server at http://localhost:3005
 pnpm build            # Production build
 pnpm start            # Start production server
 ```

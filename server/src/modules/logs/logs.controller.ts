@@ -27,7 +27,6 @@ export async function getLogs(req: Request, res: Response) {
 
   const equalityFilters = {
     id: filters.id,
-    level: filters.level,
     url: filters.endpoint,
     method: filters.method,
     status_code: filters.status_code,
@@ -40,6 +39,13 @@ export async function getLogs(req: Request, res: Response) {
     },
   };
 
+  if (filters.level) {
+    inequalities["level"] = {
+      operator: "ILIKE",
+      value: filters.level,
+    };
+  }
+
   if (filters.message) {
     inequalities["message"] = {
       operator: "ILIKE",
@@ -48,9 +54,22 @@ export async function getLogs(req: Request, res: Response) {
   }
 
   if (filters.startDate && filters.endDate) {
-    inequalities["EXTRACT(EPOCH FROM timestamp)::double precision"] = {
+    inequalities["timestamp"] = {
       operator: "BETWEEN",
-      value: [filters.startDate, filters.endDate],
+      value: [
+        new Date(filters.startDate),
+        new Date(filters.endDate + 86399999),
+      ],
+    };
+  } else if (filters.startDate) {
+    inequalities["timestamp"] = {
+      operator: ">=",
+      value: new Date(filters.startDate),
+    };
+  } else if (filters.endDate) {
+    inequalities["timestamp"] = {
+      operator: "<=",
+      value: new Date(filters.endDate + 86399999),
     };
   }
 
@@ -116,25 +135,40 @@ export async function deleteLogsByFilter(req: Request, res: Response) {
     status_code: queries.status_code || null,
   };
 
-  const equalityFilters = {
-    level: filters.level,
+  const equalityFilters: Record<string, any> = {
     url: filters.endpoint,
     method: filters.method,
     status_code: filters.status_code,
   };
 
-  const inequalities = {
-    timestamp: {
+  const inequalities: Record<string, { operator: string; value: any }> = {};
+
+  if (filters.startDate && filters.endDate) {
+    inequalities["timestamp"] = {
       operator: "BETWEEN",
-      value:
-        filters.startDate && filters.endDate
-          ? [
-              new Date(Number(filters.startDate)),
-              new Date(Number(filters.endDate)),
-            ]
-          : null,
-    },
-  };
+      value: [
+        new Date(Number(filters.startDate)),
+        new Date(Number(filters.endDate) + 86399999),
+      ],
+    };
+  } else if (filters.startDate) {
+    inequalities["timestamp"] = {
+      operator: ">=",
+      value: new Date(Number(filters.startDate)),
+    };
+  } else if (filters.endDate) {
+    inequalities["timestamp"] = {
+      operator: "<=",
+      value: new Date(Number(filters.endDate) + 86399999),
+    };
+  }
+
+  if (filters.level) {
+    inequalities["level"] = {
+      operator: "ILIKE",
+      value: filters.level,
+    };
+  }
 
   const { query, values } = buildDeletePostgresQuery(
     equalityFilters,

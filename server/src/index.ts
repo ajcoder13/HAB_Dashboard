@@ -9,7 +9,7 @@ dotenv.config({ quiet: true });
 
 startMetricsScheduler();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 const server = createServer(app);
 
