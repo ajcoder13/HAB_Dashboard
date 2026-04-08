@@ -6,7 +6,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:3005", /// TODO: Add env var for this or change in prod
+    origin: true,
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   }),
