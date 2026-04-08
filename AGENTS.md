@@ -15,7 +15,7 @@ This is a monorepo with two main packages:
 ```bash
 cd client
 pnpm install          # Install dependencies
-pnpm dev              # Start dev server at http://localhost:3000
+pnpm dev              # Start dev server at http://localhost:3005
 pnpm build            # Production build
 pnpm start            # Start production server
 ```
@@ -29,6 +29,8 @@ npm run dev           # Start dev server with tsx watch (port 3004)
 npm run build         # Compile TypeScript to dist/
 npm start             # Start compiled server from dist/
 ```
+
+**Note:** The `system_metrics` database table is automatically created on server startup. Ensure PostgreSQL is running and environment variables are properly configured in `.env`.
 
 ### Running a Single Test
 
